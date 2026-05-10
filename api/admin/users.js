@@ -1,4 +1,4 @@
-const { db, auth } = require('../../_lib/firebase-admin');
+const { db, auth } = require('../_lib/firebase-admin');
 
 export default async function handler(req, res) {
   const token = req.headers.authorization?.split('Bearer ')[1];
