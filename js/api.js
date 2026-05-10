@@ -37,7 +37,7 @@ const API = (function() {
   return {
     getDashboardMetrics: () => fetchWithAuth('/api/admin/dashboard'),
     getUsers: () => fetchWithAuth('/api/admin/users'),
-    togglePremium: (uid, isPremium) => fetchWithAuth('/api/admin/users/premium', {
+    togglePremium: (uid, isPremium) => fetchWithAuth('/api/admin/users-premium', {
       method: 'POST',
       body: JSON.stringify({ uid, isPremium })
     }),

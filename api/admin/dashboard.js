@@ -10,18 +10,13 @@ export default async function handler(req, res) {
     if (!decodedToken.admin) return res.status(403).json({ error: 'Forbidden. Admin only.' });
 
     if (req.method === 'GET') {
-      // In production, calculating these metrics dynamically might be expensive.
-      // Typically, these would be aggregated via a cron job or Firestore triggers.
-      // For this implementation, we simulate fetching aggregated data.
-      
-      const metricsDoc = await db.collection('admin').doc('metrics').get();
-      let data = { totalUsers: 0, premiumUsers: 0, aiTokens: 0 };
-      
-      if (metricsDoc.exists) {
-        data = metricsDoc.data();
-      }
+      const usersCount = await db.collection('users').count().get();
+      const totalUsers = usersCount.data().count;
 
-      res.status(200).json(data);
+      const premiumCount = await db.collection('users').where('isPremium', '==', true).count().get();
+      const premiumUsers = premiumCount.data().count;
+
+      res.status(200).json({ totalUsers, premiumUsers, aiTokens: 0 });
     } else {
       res.status(405).json({ error: 'Method Not Allowed' });
     }
