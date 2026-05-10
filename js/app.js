@@ -1,59 +1,148 @@
 /**
- * app.js - Main entry point and SPA router
+ * app.js — Main entry point and SPA router for Admin Panel
+ *
+ * Mirrors the main app's bootstrap philosophy:
+ * Initialize Firebase → Auth → Router → Views
  */
-const AppRouter = (function() {
-  
+var App = (function () {
+  'use strict';
+
   function init() {
-    window.addEventListener('hashchange', handleRoute);
-    
-    // Initial route
+    if (!FirebaseApp.init()) {
+      console.error('Firebase failed to initialize.');
+      return;
+    }
+
+    AdminAuth.init();
+    _bindSidebar();
+    _bindLogin();
+    _bindLogout();
+
+    AdminAuth.onAuthReady(function (user) {
+      if (user) {
+        _startRouter();
+      }
+    });
+  }
+
+  /* ---- Router ---- */
+  function _startRouter() {
+    window.addEventListener('hashchange', _handleRoute);
     if (!window.location.hash) {
       window.location.hash = '#dashboard';
     } else {
-      handleRoute();
+      _handleRoute();
     }
   }
 
-  function handleRoute() {
-    const hash = window.location.hash.substring(1) || 'dashboard';
-    
-    // Hide all views
-    document.querySelectorAll('.spa-view').forEach(view => {
-      view.style.display = 'none';
-      view.classList.remove('active');
+  function _handleRoute() {
+    var hash = (window.location.hash || '#dashboard').substring(1);
+    var views = ['dashboard', 'users', 'questions', 'system'];
+    if (views.indexOf(hash) === -1) hash = 'dashboard';
+
+    // Update state
+    AdminState.set({ currentView: hash });
+
+    // Toggle views
+    views.forEach(function (v) {
+      var el = document.getElementById('view-' + v);
+      if (el) {
+        el.style.display = v === hash ? 'block' : 'none';
+        el.classList.toggle('active', v === hash);
+      }
     });
 
-    // Remove active class from nav
-    document.querySelectorAll('.nav-link').forEach(link => {
-      link.classList.remove('active');
+    // Update nav active state
+    document.querySelectorAll('.nav-item').forEach(function (link) {
+      link.classList.toggle('active', link.getAttribute('data-view') === hash);
     });
 
-    // Show target view
-    const targetView = document.getElementById(`view-${hash}`);
-    const targetLink = document.querySelector(`.nav-link[data-view="${hash}"]`);
+    // Update top bar title
+    var titleMap = { dashboard: 'Dashboard', users: 'Users', questions: 'Questions', system: 'System' };
+    var topTitle = document.querySelector('.top-bar-title');
+    if (topTitle) topTitle.textContent = titleMap[hash] || 'Dashboard';
 
-    if (targetView) {
-      targetView.style.display = 'block';
-      targetView.classList.add('active');
-      
-      // Call view specific init
-      if (hash === 'dashboard' && DashboardView) DashboardView.render();
-      if (hash === 'users' && UsersView) UsersView.render();
-      if (hash === 'questions' && QuestionsView) QuestionsView.render();
-      if (hash === 'system' && SystemView) SystemView.render();
+    // Render view
+    if (hash === 'dashboard') DashboardView.render();
+    if (hash === 'users') UsersView.render();
+    if (hash === 'questions') QuestionsView.render();
+    if (hash === 'system') SystemView.render();
+
+    // Close sidebar on mobile
+    _closeSidebar();
+  }
+
+  /* ---- Sidebar Toggle ---- */
+  function _bindSidebar() {
+    var toggle = document.getElementById('menuToggle');
+    var overlay = document.getElementById('sidebarOverlay');
+
+    if (toggle) {
+      toggle.addEventListener('click', function () {
+        var sidebar = document.getElementById('sidebar');
+        var isOpen = sidebar.classList.contains('open');
+        if (isOpen) { _closeSidebar(); } else { _openSidebar(); }
+      });
     }
 
-    if (targetLink) {
-      targetLink.classList.add('active');
+    if (overlay) {
+      overlay.addEventListener('click', _closeSidebar);
+    }
+
+    // Nav links close sidebar on mobile
+    document.querySelectorAll('.nav-item').forEach(function (link) {
+      link.addEventListener('click', function () {
+        // Let hash change handle the route; sidebar closes in _handleRoute
+      });
+    });
+  }
+
+  function _openSidebar() {
+    document.getElementById('sidebar').classList.add('open');
+    document.getElementById('sidebarOverlay').classList.add('active');
+  }
+
+  function _closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('active');
+  }
+
+  /* ---- Login Form ---- */
+  function _bindLogin() {
+    var btn = document.getElementById('loginBtn');
+    var emailInput = document.getElementById('loginEmail');
+    var passInput = document.getElementById('loginPassword');
+
+    if (btn) {
+      btn.addEventListener('click', function () {
+        var email = emailInput.value.trim();
+        var password = passInput.value;
+        if (email && password) {
+          AdminAuth.login(email, password);
+        }
+      });
+    }
+
+    // Enter key support
+    if (passInput) {
+      passInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') btn.click();
+      });
     }
   }
 
-  return { init };
+  /* ---- Logout ---- */
+  function _bindLogout() {
+    var btns = [document.getElementById('logoutBtnTop'), document.getElementById('logoutBtnSidebar')];
+    btns.forEach(function (btn) {
+      if (btn) btn.addEventListener('click', AdminAuth.logout);
+    });
+  }
+
+  return { init: init };
 })();
 
-// Bootstrap
-document.addEventListener('DOMContentLoaded', () => {
-  if (FirebaseApp.init()) {
-    Auth.init();
-  }
+/* ---- Bootstrap ---- */
+document.addEventListener('DOMContentLoaded', function () {
+  App.init();
 });

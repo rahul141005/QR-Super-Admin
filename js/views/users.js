@@ -1,72 +1,100 @@
 /**
- * users.js - CRM view for users
+ * users.js — User management view
  */
-const UsersView = (function() {
-  
-  async function render() {
-    const container = document.getElementById('view-users');
-    container.innerHTML = `
-      <div class="view-header" style="display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <h2>Users</h2>
-          <p class="secondary-text">Manage users and subscriptions</p>
-        </div>
-        <button class="btn action-btn" id="refreshUsersBtn">Refresh</button>
-      </div>
-      <div id="usersTableContainer">Loading users...</div>
-    `;
+var UsersView = (function () {
+  'use strict';
 
-    document.getElementById('refreshUsersBtn').onclick = loadData;
-    loadData();
+  function render() {
+    var container = document.getElementById('view-users');
+    container.innerHTML =
+      '<div class="view-header">' +
+        '<h2 class="view-title">Users</h2>' +
+        '<p class="view-subtitle">Manage users and subscriptions</p>' +
+      '</div>' +
+      '<div class="search-bar">' +
+        '<input type="text" class="search-input" id="userSearchInput" placeholder="Search by username or email..." />' +
+        '<button class="btn btn-sm btn-outline" id="userRefreshBtn">Refresh</button>' +
+      '</div>' +
+      '<div id="usersTableArea"><div class="loading">Loading users...</div></div>';
+
+    document.getElementById('userRefreshBtn').onclick = _loadUsers;
+    document.getElementById('userSearchInput').addEventListener('input', _filterUsers);
+    _loadUsers();
   }
 
-  async function loadData() {
-    const tableContainer = document.getElementById('usersTableContainer');
+  var _allUsers = [];
+
+  async function _loadUsers() {
+    var area = document.getElementById('usersTableArea');
+    if (!area) return;
+    area.innerHTML = '<div class="loading">Loading users...</div>';
+
     try {
-      tableContainer.innerHTML = 'Loading users...';
-      const data = await API.getUsers();
-      
-      const columns = [
-        { label: 'Username', key: 'username' },
-        { label: 'Email', key: 'email' },
-        { 
-          label: 'Status', 
-          key: 'isPremium',
-          render: (val) => val ? '<span class="badge premium">Premium</span>' : '<span class="badge free">Free</span>'
-        },
-        { 
-          label: 'Joined', 
-          key: 'createdAt',
-          render: (val) => val ? new Date(val).toLocaleDateString() : '-'
-        }
-      ];
-
-      const actionsRenderer = (row) => {
-        const btn = document.createElement('button');
-        btn.className = 'action-btn';
-        btn.textContent = row.isPremium ? 'Revoke Premium' : 'Grant Premium';
-        btn.onclick = () => togglePremium(row.uid, !row.isPremium);
-        return btn;
-      };
-
-      const tableEl = TableBuilder.createTable(columns, data.users, actionsRenderer);
-      tableContainer.innerHTML = '';
-      tableContainer.appendChild(tableEl);
-
+      var data = await API.getUsers();
+      _allUsers = data.users || [];
+      AdminState.set({ usersCache: _allUsers });
+      _renderTable(_allUsers);
     } catch (e) {
-      console.error(e);
-      tableContainer.innerHTML = `<p style="color:var(--danger-color)">Error loading users: ${e.message}</p>`;
+      area.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-text">Error: ' + e.message + '</div></div>';
     }
   }
 
-  async function togglePremium(uid, newStatus) {
+  function _filterUsers() {
+    var q = (document.getElementById('userSearchInput').value || '').toLowerCase().trim();
+    if (!q) { _renderTable(_allUsers); return; }
+    var filtered = _allUsers.filter(function (u) {
+      return (u.username || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q);
+    });
+    _renderTable(filtered);
+  }
+
+  function _renderTable(users) {
+    var area = document.getElementById('usersTableArea');
+    if (!area) return;
+
+    var columns = [
+      { key: 'username', label: 'User' },
+      { key: 'email', label: 'Email' },
+      {
+        key: 'isPremium', label: 'Status',
+        render: function (val, row) {
+          if (row.isPremiumPlus) return '<span class="badge badge-premium-plus">Premium+</span>';
+          if (val) return '<span class="badge badge-premium">Premium</span>';
+          return '<span class="badge badge-free">Free</span>';
+        }
+      },
+      {
+        key: 'createdAt', label: 'Joined',
+        render: function (val) {
+          if (!val) return '–';
+          return new Date(val).toLocaleDateString();
+        }
+      }
+    ];
+
+    var actionsRenderer = function (row) {
+      var frag = document.createDocumentFragment();
+      var toggleBtn = document.createElement('button');
+      toggleBtn.className = 'action-btn';
+      toggleBtn.textContent = row.isPremium ? 'Revoke' : 'Grant';
+      toggleBtn.onclick = function () { _togglePremium(row.uid, !row.isPremium); };
+      frag.appendChild(toggleBtn);
+      return frag;
+    };
+
+    area.innerHTML = '';
+    area.appendChild(Table.build(columns, users, actionsRenderer));
+  }
+
+  async function _togglePremium(uid, newStatus) {
     try {
       await API.togglePremium(uid, newStatus);
-      loadData(); // Refresh list
+      Toast.success(newStatus ? 'Premium granted' : 'Premium revoked');
+      _loadUsers();
     } catch (e) {
-      alert("Failed to update premium status: " + e.message);
+      Toast.error('Failed: ' + e.message);
     }
   }
 
-  return { render };
+  return { render: render };
 })();

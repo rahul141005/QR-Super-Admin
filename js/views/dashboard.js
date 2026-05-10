@@ -1,62 +1,46 @@
 /**
- * dashboard.js - Top level metrics view
+ * dashboard.js — Dashboard view
  */
-const DashboardView = (function() {
-  let isLoaded = false;
+var DashboardView = (function () {
+  'use strict';
 
-  async function render() {
-    const container = document.getElementById('view-dashboard');
-    if (!isLoaded) {
-      container.innerHTML = `
-        <div class="view-header">
-          <h2>Dashboard</h2>
-          <p class="secondary-text">Overview of QuantReflex ecosystem</p>
-        </div>
-        <div class="stat-grid" id="dashboardStats">
-          <div class="stat-card">
-            <div class="stat-value">...</div>
-            <div class="stat-label">Total Users</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value">...</div>
-            <div class="stat-label">Premium Active</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value">...</div>
-            <div class="stat-label">AI Tokens Used</div>
-          </div>
-        </div>
-      `;
-      loadData();
-    }
+  function render() {
+    var container = document.getElementById('view-dashboard');
+    container.innerHTML =
+      '<div class="view-header">' +
+        '<h2 class="view-title">Dashboard</h2>' +
+        '<p class="view-subtitle">QuantReflex ecosystem overview</p>' +
+      '</div>' +
+      '<div class="stat-grid" id="dashboardStats">' +
+        _statCard('–', 'Total Users') +
+        _statCard('–', 'Premium') +
+        _statCard('–', 'Premium+') +
+        _statCard('–', 'AI Tokens') +
+      '</div>';
+
+    _loadData();
   }
 
-  async function loadData() {
+  function _statCard(value, label) {
+    return '<div class="stat-card"><div class="stat-value">' + value + '</div><div class="stat-label">' + label + '</div></div>';
+  }
+
+  async function _loadData() {
     try {
-      const data = await API.getDashboardMetrics();
-      const statsContainer = document.getElementById('dashboardStats');
-      if (statsContainer && data) {
-        statsContainer.innerHTML = `
-          <div class="stat-card">
-            <div class="stat-value">${data.totalUsers || 0}</div>
-            <div class="stat-label">Total Users</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value">${data.premiumUsers || 0}</div>
-            <div class="stat-label">Premium Active</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value">${data.aiTokens || 0}</div>
-            <div class="stat-label">AI Tokens Used</div>
-          </div>
-        `;
-        isLoaded = true;
+      var data = await API.getDashboard();
+      var grid = document.getElementById('dashboardStats');
+      if (grid && data) {
+        grid.innerHTML =
+          _statCard(data.totalUsers || 0, 'Total Users') +
+          _statCard(data.premiumUsers || 0, 'Premium') +
+          _statCard(data.premiumPlusUsers || 0, 'Premium+') +
+          _statCard(data.aiTokens || 0, 'AI Tokens');
+        AdminState.set({ dashboardData: data });
       }
     } catch (e) {
-      console.error(e);
-      // Fallback UI or error state
+      console.error('[Dashboard] Load error:', e);
     }
   }
 
-  return { render };
+  return { render: render };
 })();

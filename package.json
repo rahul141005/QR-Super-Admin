@@ -1,13 +1,9 @@
 {
-  "name": "quantreflex-admin-panel",
+  "name": "quantreflex-admin",
   "version": "1.0.0",
-  "description": "Super Admin Panel for QuantReflex Ecosystem",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
-  },
+  "description": "QuantReflex Super Admin Panel",
+  "private": true,
   "dependencies": {
-    "firebase-admin": "^12.1.0"
+    "firebase-admin": "^13.7.0"
   }
 }

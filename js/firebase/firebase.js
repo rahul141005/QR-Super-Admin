@@ -1,13 +1,17 @@
 /**
- * firebase.js - Firebase Initialization for Admin Panel
+ * firebase.js — Firebase initialization for Admin Panel
+ *
+ * Uses the same Firebase project config as the main app.
+ * Client-side API keys are safe to expose (access controlled by Security Rules).
  */
-const FirebaseApp = (function () {
-  let _db = null;
-  let _auth = null;
-  let _initialized = false;
+var FirebaseApp = (function () {
+  'use strict';
 
-  // Uses the same config as the main app
-  const firebaseConfig = {
+  var _db = null;
+  var _auth = null;
+  var _initialized = false;
+
+  var firebaseConfig = {
     apiKey: 'AIzaSyDHTnIhjlyLy6CGOeLHfAIjIX_Bd4kSfco',
     authDomain: 'quant-reflex-trainer.firebaseapp.com',
     projectId: 'quant-reflex-trainer',
@@ -24,6 +28,9 @@ const FirebaseApp = (function () {
       }
       _db = firebase.firestore();
       _auth = firebase.auth();
+      _auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(function (err) {
+        console.warn('Auth persistence error:', err);
+      });
       _initialized = true;
       return true;
     } catch (e) {
@@ -34,7 +41,7 @@ const FirebaseApp = (function () {
 
   function getDb() { return _db; }
   function getAuth() { return _auth; }
-  function isReady() { return _initialized; }
+  function isReady() { return _initialized && _db !== null; }
 
-  return { init, getDb, getAuth, isReady };
+  return { init: init, getDb: getDb, getAuth: getAuth, isReady: isReady };
 })();

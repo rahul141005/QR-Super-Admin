@@ -1,25 +1,20 @@
-const { db, auth } = require('../_lib/firebase-admin');
+const { withAdmin, db } = require('../_lib/firebase-admin');
 
-export default async function handler(req, res) {
-  const token = req.headers.authorization?.split('Bearer ')[1];
-  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+module.exports = withAdmin(async function (req, res) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
 
   try {
-    const decodedToken = await auth.verifyIdToken(token);
-    if (!decodedToken.admin) return res.status(403).json({ error: 'Forbidden. Admin only.' });
+    const snapshot = await db.collection('questions').orderBy('createdAt', 'desc').limit(100).get();
+    const questions = [];
+    snapshot.forEach(function (doc) {
+      questions.push({ id: doc.id, ...doc.data() });
+    });
 
-    if (req.method === 'GET') {
-      const snapshot = await db.collection('questions').limit(100).get();
-      const questions = [];
-      snapshot.forEach(doc => {
-        questions.push({ id: doc.id, ...doc.data() });
-      });
-
-      res.status(200).json({ questions });
-    } else {
-      res.status(405).json({ error: 'Method Not Allowed' });
-    }
+    res.status(200).json({ questions: questions });
   } catch (error) {
+    console.error('[questions] Error:', error);
     res.status(500).json({ error: error.message });
   }
-}
+});
