@@ -58,19 +58,27 @@ var QuestionsView = (function () {
   function _validateAndShowImportPreview(arr) {
     var valid = [];
     var invalid = 0;
+    var difficultyDist = { easy: 0, medium: 0, hard: 0 };
+    var topics = {};
     
     arr.forEach(function(q) {
       if (q.topic && q.difficulty && q.question && q.answer !== undefined) {
         valid.push(q);
+        var diff = String(q.difficulty).toLowerCase();
+        if (difficultyDist[diff] !== undefined) difficultyDist[diff]++;
+        var t = String(q.topic);
+        topics[t] = (topics[t] || 0) + 1;
       } else {
         invalid++;
       }
     });
+
+    var topicCount = Object.keys(topics).length;
     
     var body = document.createElement('div');
     body.innerHTML = 
       '<p class="text-secondary text-sm" style="margin-bottom:1rem;">Your file has been scanned.</p>' +
-      '<div style="display:flex; gap:1rem; margin-bottom:1.5rem;">' +
+      '<div style="display:flex; gap:1rem; margin-bottom:1rem;">' +
         '<div style="flex:1; padding:1rem; background:#ecfdf5; border:1px solid #a7f3d0; border-radius:.75rem; text-align:center;">' +
           '<div style="font-size:1.5rem; font-weight:800; color:#059669;">' + valid.length + '</div>' +
           '<div style="font-size:.75rem; color:#065f46; font-weight:600; text-transform:uppercase;">Valid</div>' +
@@ -80,19 +88,24 @@ var QuestionsView = (function () {
           '<div style="font-size:.75rem; color:#991b1b; font-weight:600; text-transform:uppercase;">Invalid/Skipped</div>' +
         '</div>' +
       '</div>' +
-      (valid.length > 500 ? '<div class="login-error">Maximum 500 questions allowed per import. Please split your file.</div>' : '') +
-      '<p class="text-sm text-secondary">Clicking Confirm will immediately upload the valid questions to the database.</p>';
+      '<div style="background:#f8fafc; padding:.75rem; border-radius:.5rem; margin-bottom:1.5rem; font-size:.8125rem;">' +
+        '<div style="display:flex; justify-content:space-between; margin-bottom:.25rem;"><span>Unique Topics:</span> <strong>' + topicCount + '</strong></div>' +
+        '<div style="display:flex; justify-content:space-between; margin-bottom:.25rem;"><span>Easy:</span> <strong>' + difficultyDist.easy + '</strong></div>' +
+        '<div style="display:flex; justify-content:space-between; margin-bottom:.25rem;"><span>Medium:</span> <strong>' + difficultyDist.medium + '</strong></div>' +
+        '<div style="display:flex; justify-content:space-between;"><span>Hard:</span> <strong>' + difficultyDist.hard + '</strong></div>' +
+      '</div>' +
+      '<div id="importProgressBar" style="display:none; height:8px; background:#e2e8f0; border-radius:4px; overflow:hidden; margin-bottom:1rem;"><div id="importProgressFill" style="width:0%; height:100%; background:#2563eb; transition:width .2s;"></div></div>' +
+      '<p id="importProgressText" class="text-sm text-secondary">Clicking Confirm will immediately batch upload the valid questions.</p>';
       
     Modal.show({
       title: 'Import Preview',
       body: body,
       actions: [
-        { label: 'Cancel' },
+        { label: 'Cancel', id: 'importCancelBtn' },
         { 
           label: 'Confirm Import', 
           accent: true, 
           onClick: function(btn) { 
-            if(valid.length > 500) { Toast.error('Max 500 questions allowed.'); return; }
             if(valid.length === 0) { Toast.error('No valid questions to import.'); return; }
             _executeImport(valid, btn); 
           }, 
@@ -104,29 +117,56 @@ var QuestionsView = (function () {
 
   async function _executeImport(validArray, btn) {
     btn.disabled = true;
-    btn.textContent = 'Uploading...';
+    var cancelBtn = document.getElementById('importCancelBtn');
+    if (cancelBtn) cancelBtn.disabled = true;
     
-    try {
-      var res = await fetch('/api/admin/questions-import', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + AdminAuth.getToken()
-        },
-        body: JSON.stringify({ questions: validArray })
-      });
+    document.getElementById('importProgressBar').style.display = 'block';
+    var textEl = document.getElementById('importProgressText');
+    var fillEl = document.getElementById('importProgressFill');
+    
+    var chunkSize = 100;
+    var chunks = [];
+    for (let i = 0; i < validArray.length; i += chunkSize) {
+      chunks.push(validArray.slice(i, i + chunkSize));
+    }
+    
+    var totalUploaded = 0;
+    var totalFailed = 0;
+
+    for (let i = 0; i < chunks.length; i++) {
+      textEl.textContent = 'Uploading batch ' + (i + 1) + ' of ' + chunks.length + '... (' + totalUploaded + '/' + validArray.length + ' completed)';
+      fillEl.style.width = ((i / chunks.length) * 100) + '%';
       
-      var data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Import failed');
-      
-      Toast.success('Successfully imported ' + data.count + ' questions.');
+      try {
+        var res = await fetch('/api/admin/questions-import', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + AdminAuth.getToken()
+          },
+          body: JSON.stringify({ questions: chunks[i] })
+        });
+        var data = await res.json();
+        if (res.ok) {
+          totalUploaded += data.count || chunks[i].length;
+        } else {
+          console.error('Batch failed:', data.error);
+          totalFailed += chunks[i].length;
+        }
+      } catch (e) {
+        console.error('Batch failed:', e.message);
+        totalFailed += chunks[i].length;
+      }
+    }
+    
+    fillEl.style.width = '100%';
+    textEl.textContent = 'Import complete: ' + totalUploaded + ' uploaded, ' + totalFailed + ' failed.';
+    
+    Toast.success('Import Finished: ' + totalUploaded + ' questions added.');
+    setTimeout(function() {
       Modal.close();
       _loadQuestions();
-    } catch (e) {
-      btn.disabled = false;
-      btn.textContent = 'Confirm Import';
-      Toast.error(e.message);
-    }
+    }, 1500);
   }
 
   async function _loadQuestions() {

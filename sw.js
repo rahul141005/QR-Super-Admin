@@ -1,4 +1,4 @@
-const CACHE_NAME = 'qr-admin-cache-v2';
+const CACHE_NAME = 'qr-admin-cache-v3';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

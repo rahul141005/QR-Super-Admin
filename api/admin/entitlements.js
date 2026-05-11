@@ -6,10 +6,11 @@ module.exports = withAdmin(async function (req, res) {
   }
 
   try {
-    const { type, action, targetId } = req.body;
+    const { type, action, targetId, trialDays } = req.body;
     // type: 'individual' | 'bulk'
     // action: 'trial' | 'premium' | 'premium_plus_6m' | 'premium_plus_1y' | 'revoke'
     // targetId: uid (if individual) or coachingId (if bulk)
+    // trialDays: number (optional)
 
     if (!type || !action || !targetId) {
       return res.status(400).json({ error: 'type, action, and targetId are required' });
@@ -39,17 +40,21 @@ module.exports = withAdmin(async function (req, res) {
     const updatedAt = new Date().toISOString();
 
     if (action === 'trial') {
-      const trialEnd = now + 7 * 24 * 60 * 60 * 1000;
+      const durationDays = parseInt(trialDays, 10) || 7;
+      const trialEnd = now + durationDays * 24 * 60 * 60 * 1000;
       payload = {
         isTrial: true,
         trialEnd: trialEnd,
         updatedAt
       };
+      // Note: We do NOT explicitly wipe premium fields here because 
+      // if they are already premium, granting a trial should not downgrade them. 
+      // The frontend should ideally block this, but we leave premium fields untouched.
     } else if (action === 'premium') {
       payload = {
         isPremium: true,
         hasPaid: true,
-        isTrial: false,
+        isTrial: false, // Precedence: wipe trial
         trialEnd: null,
         updatedAt
       };
@@ -62,6 +67,8 @@ module.exports = withAdmin(async function (req, res) {
         premiumPlusPlan: plan,
         premiumPlusExpiry: expiry,
         premiumPlusStatus: 'active',
+        isTrial: false, // Precedence: wipe trial
+        trialEnd: null,
         updatedAt
       };
     } else if (action === 'revoke') {
@@ -74,6 +81,8 @@ module.exports = withAdmin(async function (req, res) {
         premiumPlusExpiry: null,
         premiumPlusStatus: null,
         premiumPlusPlan: null,
+        lastPaymentId: null,
+        lastPremiumPlusPaymentId: null,
         updatedAt
       };
     } else {
@@ -86,7 +95,20 @@ module.exports = withAdmin(async function (req, res) {
     let totalUpdated = 0;
 
     for (let i = 0; i < userDocs.length; i++) {
-      batch.set(userDocs[i].ref, payload, { merge: true });
+      let docData = userDocs[i].data();
+      let applyPayload = { ...payload };
+
+      // Precedence protection: Do not apply trial if already premium/premium+
+      if (action === 'trial') {
+        let isPrem = docData.isPremium || docData.hasPaid;
+        let isPlus = docData.isPremiumPlus && docData.premiumPlusExpiry && docData.premiumPlusExpiry > now;
+        if (isPrem || isPlus) {
+          // Skip downgrading to trial
+          continue;
+        }
+      }
+
+      batch.update(userDocs[i].ref, applyPayload);
       batchCount++;
       totalUpdated++;
 

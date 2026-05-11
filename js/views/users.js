@@ -96,12 +96,26 @@ var UsersView = (function () {
         var email = u.email || 'No email';
         var isPrem = u.isPremiumPlus || u.isPremium;
         var badgeHTML = '';
-        if (u.isPremiumPlus) badgeHTML = '<span class="badge badge-premium-plus">Premium+</span>';
-        else if (u.isPremium) badgeHTML = '<span class="badge badge-premium">Premium</span>';
-        else if (u.isTrial) badgeHTML = '<span class="badge badge-draft">Trial</span>';
-        else badgeHTML = '<span class="badge badge-free">Free</span>';
+        var stateType = 'free';
+        
+        if (u.isPremiumPlus && u.premiumPlusExpiry && u.premiumPlusExpiry > Date.now()) {
+          badgeHTML = '<span class="badge badge-premium-plus">Premium+</span>';
+          stateType = 'plus';
+        } else if (u.isPremium) {
+          badgeHTML = '<span class="badge badge-premium">Premium</span>';
+          stateType = 'premium';
+        } else if (u.isTrial && u.trialEnd && u.trialEnd > Date.now()) {
+          badgeHTML = '<span class="badge badge-draft">Trial</span>';
+          stateType = 'trial';
+        } else {
+          badgeHTML = '<span class="badge badge-free">Free</span>';
+          stateType = 'free';
+        }
 
-        // Use a container that expands on click (using a simple toggle pattern)
+        var actionLabel = stateType === 'free' ? 'Grant Access' : 'Modify Access';
+        var actionAccent = stateType === 'free' ? 'accent' : 'btn-outline';
+
+        // Use a container that expands on click
         var detailId = 'details_' + u.uid;
         
         html += '<div style="border: 1px solid rgba(226,232,240,.6); border-radius: .75rem; padding: 1rem; background: #fff; cursor: pointer; transition: border-color .2s;" onclick="document.getElementById(\'' + detailId + '\').style.display = document.getElementById(\'' + detailId + '\').style.display === \'none\' ? \'block\' : \'none\';">';
@@ -112,7 +126,7 @@ var UsersView = (function () {
         html += '</div>';
         html += '<div style="display: flex; flex-direction: column; align-items: flex-end; gap: .25rem;">';
         html += badgeHTML;
-        html += '<div style="font-size: .6875rem; color: #94a3b8; margin-top: .25rem;">Tap for actions ▼</div>';
+        html += '<div style="font-size: .6875rem; color: #94a3b8; margin-top: .25rem;">Tap for details ▼</div>';
         html += '</div>';
         html += '</div>';
         
@@ -120,17 +134,15 @@ var UsersView = (function () {
         html += '<div id="' + detailId + '" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed rgba(226,232,240,.6);">';
         html += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: .75rem; margin-bottom: 1rem; font-size: .8125rem;">';
         html += '<div><span style="color: #64748b; display: block; font-size: .6875rem; text-transform: uppercase;">Joined</span>' + (u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '–') + '</div>';
-        if (u.isPremiumPlus && u.premiumPlusExpiry) {
+        if (stateType === 'plus') {
           html += '<div><span style="color: #64748b; display: block; font-size: .6875rem; text-transform: uppercase;">Expiry</span>' + new Date(u.premiumPlusExpiry).toLocaleDateString() + '</div>';
-        } else if (u.isTrial && u.trialEnd) {
+        } else if (stateType === 'trial') {
           html += '<div><span style="color: #64748b; display: block; font-size: .6875rem; text-transform: uppercase;">Trial Ends</span>' + new Date(u.trialEnd).toLocaleDateString() + '</div>';
         }
         html += '</div>';
         
         html += '<div style="display: flex; gap: .5rem; flex-wrap: wrap;">';
-        html += '<button class="btn btn-sm btn-outline" style="flex:1;" onclick="event.stopPropagation(); UsersView.confirmEnt(\'individual\', \'trial\', \'' + u.uid + '\')">Trial</button>';
-        html += '<button class="btn btn-sm btn-outline" style="flex:1;" onclick="event.stopPropagation(); UsersView.confirmEnt(\'individual\', \'premium_plus_6m\', \'' + u.uid + '\')">Premium+</button>';
-        html += '<button class="btn btn-sm btn-danger" style="flex:1;" onclick="event.stopPropagation(); UsersView.confirmEnt(\'individual\', \'revoke\', \'' + u.uid + '\')">Revoke</button>';
+        html += '<button class="btn btn-sm ' + actionAccent + '" style="flex:1;" onclick="event.stopPropagation(); UsersView.showIndividualActions(\'' + u.uid + '\', \'' + stateType + '\', \'' + _escapeHtml(name) + '\')">' + actionLabel + '</button>';
         html += '</div>';
         
         html += '</div>'; // End Expanded Details
@@ -167,21 +179,58 @@ var UsersView = (function () {
     });
   }
 
+  function _showIndividualActions(uid, stateType, name) {
+    var body = document.createElement('div');
+    
+    var trialHtml = 
+      '<div style="display:flex; align-items:center; gap:.5rem; margin-bottom:.75rem;">' +
+        '<input type="number" id="trialDays_' + uid + '" class="modal-input" style="width:80px; margin:0;" value="7" min="1" max="365" />' +
+        '<span style="font-size:.875rem; color:#64748b;">Days Trial</span>' +
+      '</div>' +
+      '<button class="btn btn-outline" style="width:100%; margin-bottom:.75rem;" onclick="UsersView.confirmEnt(\'individual\', \'trial\', \'' + uid + '\'); Modal.close();">Grant Trial</button>';
+
+    var premiumHtml = 
+      '<button class="btn btn-outline" style="width:100%; margin-bottom:.75rem;" onclick="UsersView.confirmEnt(\'individual\', \'premium\', \'' + uid + '\'); Modal.close();">Grant Premium (Lifetime)</button>' +
+      '<button class="btn btn-outline" style="width:100%; margin-bottom:.75rem; color:#2563eb; border-color:#bfdbfe;" onclick="UsersView.confirmEnt(\'individual\', \'premium_plus_6m\', \'' + uid + '\'); Modal.close();">Grant Premium+ (6 Months)</button>' +
+      '<button class="btn btn-outline" style="width:100%; margin-bottom:.75rem; color:#2563eb; border-color:#bfdbfe;" onclick="UsersView.confirmEnt(\'individual\', \'premium_plus_1y\', \'' + uid + '\'); Modal.close();">Grant Premium+ (1 Year)</button>';
+
+    var revokeHtml = '';
+    if (stateType !== 'free') {
+      revokeHtml = 
+        '<hr style="border:0; border-top:1px dashed #e2e8f0; margin:1rem 0;" />' +
+        '<button class="btn btn-danger" style="width:100%;" onclick="UsersView.confirmEnt(\'individual\', \'revoke\', \'' + uid + '\'); Modal.close();">Revoke All Access</button>';
+    }
+
+    body.innerHTML = 
+      '<p class="text-secondary text-sm" style="margin-bottom: 1.5rem;">Select an action for <strong>' + name + '</strong>.</p>' +
+      trialHtml + premiumHtml + revokeHtml;
+    
+    Modal.show({
+      title: 'Manage Access',
+      body: body,
+      actions: [ { label: 'Cancel' } ]
+    });
+  }
+
   function _showBulkActions(targetId) {
     var body = document.createElement('div');
     body.innerHTML = 
       '<p class="text-secondary text-sm" style="margin-bottom: 1.5rem;">Select an action to apply to all students within coaching group <strong>' + _escapeHtml(targetId) + '</strong>.</p>' +
-      '<div style="display: flex; flex-direction: column; gap: .75rem;">' +
-        '<button class="btn btn-outline" onclick="UsersView.confirmEnt(\'bulk\', \'trial\', \'' + targetId + '\'); Modal.close();">Grant 7-Day Trial</button>' +
-        '<button class="btn btn-outline" style="color:#2563eb; border-color:#bfdbfe;" onclick="UsersView.confirmEnt(\'bulk\', \'premium_plus_6m\', \'' + targetId + '\'); Modal.close();">Grant Premium+ (6 Months)</button>' +
-        '<button class="btn btn-outline" style="color:#2563eb; border-color:#bfdbfe;" onclick="UsersView.confirmEnt(\'bulk\', \'premium_plus_1y\', \'' + targetId + '\'); Modal.close();">Grant Premium+ (1 Year)</button>' +
-        '<button class="btn btn-danger" onclick="UsersView.confirmEnt(\'bulk\', \'revoke\', \'' + targetId + '\'); Modal.close();">Revoke All Access</button>' +
-      '</div>';
+      '<div style="display:flex; align-items:center; gap:.5rem; margin-bottom:.75rem;">' +
+        '<input type="number" id="trialDays_' + targetId + '" class="modal-input" style="width:80px; margin:0;" value="7" min="1" max="365" />' +
+        '<span style="font-size:.875rem; color:#64748b;">Days Trial</span>' +
+      '</div>' +
+      '<button class="btn btn-outline" style="width:100%; margin-bottom:.75rem;" onclick="UsersView.confirmEnt(\'bulk\', \'trial\', \'' + targetId + '\'); Modal.close();">Grant Trial</button>' +
+      '<button class="btn btn-outline" style="width:100%; margin-bottom:.75rem;" onclick="UsersView.confirmEnt(\'bulk\', \'premium\', \'' + targetId + '\'); Modal.close();">Grant Premium (Lifetime)</button>' +
+      '<button class="btn btn-outline" style="width:100%; margin-bottom:.75rem; color:#2563eb; border-color:#bfdbfe;" onclick="UsersView.confirmEnt(\'bulk\', \'premium_plus_6m\', \'' + targetId + '\'); Modal.close();">Grant Premium+ (6 Months)</button>' +
+      '<button class="btn btn-outline" style="width:100%; margin-bottom:.75rem; color:#2563eb; border-color:#bfdbfe;" onclick="UsersView.confirmEnt(\'bulk\', \'premium_plus_1y\', \'' + targetId + '\'); Modal.close();">Grant Premium+ (1 Year)</button>' +
+      '<hr style="border:0; border-top:1px dashed #e2e8f0; margin:1rem 0;" />' +
+      '<button class="btn btn-danger" style="width:100%;" onclick="UsersView.confirmEnt(\'bulk\', \'revoke\', \'' + targetId + '\'); Modal.close();">Revoke All Access</button>';
     
     Modal.show({
       title: 'Bulk Actions',
       body: body,
-      actions: [ { label: 'Close' } ]
+      actions: [ { label: 'Cancel' } ]
     });
   }
 
@@ -204,29 +253,54 @@ var UsersView = (function () {
     }
   }
 
-  async function _confirmEntitlement(type, action, targetId) {
+  function _confirmEntitlement(type, action, targetId) {
+    var trialDays = 7;
+    if (action === 'trial') {
+      var inputEl = document.getElementById('trialDays_' + targetId);
+      if (inputEl) {
+        trialDays = parseInt(inputEl.value, 10) || 7;
+      }
+    }
+
     var actionLabels = {
-      'trial': '7-Day Trial',
+      'trial': trialDays + '-Day Trial',
       'premium': 'Lifetime Premium',
       'premium_plus_6m': 'Premium+ (6 Months)',
       'premium_plus_1y': 'Premium+ (1 Year)',
       'revoke': 'Revoke All Access'
     };
 
-    var msg = 'Are you sure you want to ' + (action === 'revoke' ? 'revoke' : 'grant') + ' ' + actionLabels[action] + '?';
-    if (type === 'bulk') {
-      msg = '⚠️ WARNING: You are applying a BULK ACTION to coaching ID: ' + targetId + '.\n\nThis will permanently update all users in this group with: ' + actionLabels[action] + '.\n\nProceed?';
-    }
+    var msg = 'Are you sure you want to ' + (action === 'revoke' ? 'apply' : 'grant') + ' ' + actionLabels[action] + ' for ' + (type === 'bulk' ? 'all users in ' + _escapeHtml(targetId) : 'this user') + '?';
 
-    if (!confirm(msg)) return;
+    var body = document.createElement('div');
+    body.innerHTML = '<p>' + msg + '</p>';
 
-    try {
-      const res = await API.grantEntitlement(type, action, targetId);
-      Toast.success('Updated ' + res.updatedCount + ' user(s) successfully.');
-      _loadData();
-    } catch (e) {
-      Toast.error('Failed to update entitlements: ' + e.message);
-    }
+    Modal.show({
+      title: 'Confirm Entitlement',
+      body: body,
+      actions: [
+        { label: 'Cancel' },
+        { 
+          label: 'Confirm', 
+          accent: action === 'revoke', 
+          onClick: async function (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+            try {
+              const res = await API.grantEntitlement(type, action, targetId, trialDays);
+              Toast.success('Updated ' + res.updatedCount + ' user(s) successfully.');
+              Modal.close();
+              _loadData();
+            } catch (e) {
+              btn.disabled = false;
+              btn.textContent = 'Confirm';
+              Toast.error('Failed to update entitlements: ' + e.message);
+            }
+          }, 
+          autoClose: false 
+        }
+      ]
+    });
   }
 
   return { 

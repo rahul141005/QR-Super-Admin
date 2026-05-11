@@ -42,10 +42,12 @@ var API = (function () {
     });
   }
 
-  function grantEntitlement(type, action, targetId) {
+  function grantEntitlement(type, action, targetId, trialDays) {
+    var payload = { type: type, action: action, targetId: targetId };
+    if (trialDays) payload.trialDays = trialDays;
     return _fetch('/api/admin/entitlements', {
       method: 'POST',
-      body: JSON.stringify({ type, action, targetId })
+      body: JSON.stringify(payload)
     });
   }
 
@@ -61,7 +63,7 @@ var API = (function () {
     });
   }
 
-  /* ---- Questions ---- */
+  /* ---- Questions & AI ---- */
   function getQuestions() {
     return _fetch('/api/admin/questions');
   }
@@ -71,6 +73,10 @@ var API = (function () {
       method: 'POST',
       body: JSON.stringify(questionData)
     });
+  }
+
+  function getAIUsage() {
+    return _fetch('/api/admin/ai-usage');
   }
 
   function generateQuestion(topic, difficulty) {
@@ -89,6 +95,7 @@ var API = (function () {
     createCoaching: createCoaching,
     getQuestions: getQuestions,
     saveQuestion: saveQuestion,
-    generateQuestion: generateQuestion
+    generateQuestion: generateQuestion,
+    getAIUsage: getAIUsage
   };
 })();

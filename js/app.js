@@ -37,7 +37,7 @@ var App = (function () {
 
   function _handleRoute() {
     var hash = (window.location.hash || '#dashboard').substring(1);
-    var views = ['dashboard', 'users', 'payments', 'questions', 'system'];
+    var views = ['dashboard', 'users', 'payments', 'questions', 'system', 'ai'];
     if (views.indexOf(hash) === -1) hash = 'dashboard';
 
     // Update state
@@ -63,6 +63,7 @@ var App = (function () {
     if (hash === 'payments') PaymentsView.render();
     if (hash === 'questions') QuestionsView.render();
     if (hash === 'system') SystemView.render();
+    if (hash === 'ai') AIAnalyticsView.render();
   }
 
   /* ---- Login Form ---- */
