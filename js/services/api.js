@@ -30,7 +30,7 @@ var API = (function () {
     return _fetch('/api/admin/dashboard');
   }
 
-  /* ---- Users ---- */
+  /* ---- Users & Entitlements ---- */
   function getUsers() {
     return _fetch('/api/admin/users');
   }
@@ -42,15 +42,53 @@ var API = (function () {
     });
   }
 
+  function grantEntitlement(type, action, targetId) {
+    return _fetch('/api/admin/entitlements', {
+      method: 'POST',
+      body: JSON.stringify({ type, action, targetId })
+    });
+  }
+
+  /* ---- Coachings ---- */
+  function getCoachings() {
+    return _fetch('/api/admin/coachings');
+  }
+
+  function createCoaching(coachingId, name) {
+    return _fetch('/api/admin/coachings', {
+      method: 'POST',
+      body: JSON.stringify({ coachingId, name })
+    });
+  }
+
   /* ---- Questions ---- */
   function getQuestions() {
     return _fetch('/api/admin/questions');
+  }
+
+  function saveQuestion(questionData) {
+    return _fetch('/api/admin/questions', {
+      method: 'POST',
+      body: JSON.stringify(questionData)
+    });
+  }
+
+  function generateQuestion(topic, difficulty) {
+    return _fetch('/api/admin/generate-question', {
+      method: 'POST',
+      body: JSON.stringify({ topic, difficulty })
+    });
   }
 
   return {
     getDashboard: getDashboard,
     getUsers: getUsers,
     togglePremium: togglePremium,
-    getQuestions: getQuestions
+    grantEntitlement: grantEntitlement,
+    getCoachings: getCoachings,
+    createCoaching: createCoaching,
+    getQuestions: getQuestions,
+    saveQuestion: saveQuestion,
+    generateQuestion: generateQuestion
   };
 })();
