@@ -14,27 +14,61 @@ var QuestionsView = (function () {
         '</div>' +
         '<div style="display:flex;gap:.5rem;flex-wrap:wrap;">' +
           '<button class="btn btn-sm btn-outline" id="qRefreshBtn">Refresh</button>' +
-          '<button class="btn btn-sm" id="qImportBtn" style="background:var(--bg-secondary); border:1px solid var(--border-color);">📤 Import JSON</button>' +
           '<button class="btn btn-sm" id="qGenerateBtn" style="background:var(--bg-secondary); border:1px solid var(--border-color);">✨ AI Generate</button>' +
           '<button class="btn btn-sm accent" id="qAddBtn">+ Manual Add</button>' +
         '</div>' +
       '</div>' +
-      '<input type="file" id="qFileInput" accept=".json" style="display:none;" />' +
+      
+      '<div id="qDropZone" style="border: 2px dashed var(--border-color); border-radius: var(--radius-lg); padding: 2rem; text-align: center; margin-bottom: 1.5rem; background: var(--bg-surface); cursor: pointer; transition: all var(--transition-fast);">' +
+        '<div style="font-size: 2rem; margin-bottom: .5rem;">📥</div>' +
+        '<div style="font-size: 1rem; font-weight: 600; color: var(--text-primary);">Drag & Drop JSON File</div>' +
+        '<div style="font-size: .8125rem; color: var(--text-secondary); margin-top: .25rem;">or click to browse from your device</div>' +
+        '<input type="file" id="qFileInput" accept=".json" style="display:none;" />' +
+      '</div>' +
+
       '<div id="questionsTableArea"><div class="loading">Loading questions...</div></div>';
 
     document.getElementById('qRefreshBtn').onclick = _loadQuestions;
     document.getElementById('qGenerateBtn').onclick = _showGenerateModal;
     document.getElementById('qAddBtn').onclick = function() { _showEditModal(); };
     
+    var dropZone = document.getElementById('qDropZone');
     var fileInput = document.getElementById('qFileInput');
-    document.getElementById('qImportBtn').onclick = function() { fileInput.click(); };
-    fileInput.onchange = _handleFileSelect;
+    
+    dropZone.onclick = function() { fileInput.click(); };
+    
+    dropZone.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      dropZone.style.borderColor = 'var(--accent-primary)';
+      dropZone.style.background = '#eff6ff';
+    });
+    
+    dropZone.addEventListener('dragleave', function(e) {
+      e.preventDefault();
+      dropZone.style.borderColor = 'var(--border-color)';
+      dropZone.style.background = 'var(--bg-surface)';
+    });
+    
+    dropZone.addEventListener('drop', function(e) {
+      e.preventDefault();
+      dropZone.style.borderColor = 'var(--border-color)';
+      dropZone.style.background = 'var(--bg-surface)';
+      
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        _handleFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.onchange = function(e) {
+      if (e.target.files && e.target.files.length > 0) {
+        _handleFile(e.target.files[0]);
+      }
+    };
     
     _loadQuestions();
   }
 
-  function _handleFileSelect(e) {
-    var file = e.target.files[0];
+  function _handleFile(file) {
     if (!file) return;
     
     var reader = new FileReader();

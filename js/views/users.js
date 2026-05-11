@@ -118,11 +118,11 @@ var UsersView = (function () {
         // Use a container that expands on click
         var detailId = 'details_' + u.uid;
         
-        html += '<div style="border: 1px solid rgba(226,232,240,.6); border-radius: .75rem; padding: 1rem; background: #fff; cursor: pointer; transition: border-color .2s;" onclick="document.getElementById(\'' + detailId + '\').style.display = document.getElementById(\'' + detailId + '\').style.display === \'none\' ? \'block\' : \'none\';">';
+        html += '<div style="border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1rem; background: var(--bg-surface); cursor: pointer; transition: all var(--transition-fast);" onclick="var d=document.getElementById(\'' + detailId + '\'); if(d.style.maxHeight!==\'500px\'){d.style.maxHeight=\'500px\';d.style.opacity=\'1\';d.style.marginTop=\'1rem\';}else{d.style.maxHeight=\'0\';d.style.opacity=\'0\';d.style.marginTop=\'0\';}">';
         html += '<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: .5rem; flex-wrap: wrap;">';
         html += '<div style="flex: 1; min-width: 150px;">';
-        html += '<div style="font-weight: 600; font-size: .9375rem; color: #0f172a; word-break: break-word; overflow-wrap: anywhere; line-height: 1.2; margin-bottom: .25rem;">' + _escapeHtml(name) + '</div>';
-        html += '<div style="font-size: .8125rem; color: #64748b; word-break: break-word; overflow-wrap: anywhere;">' + _escapeHtml(email) + '</div>';
+        html += '<div style="font-weight: 600; font-size: .9375rem; color: var(--text-primary); word-break: break-word; overflow-wrap: anywhere; line-height: 1.2; margin-bottom: .25rem;">' + _escapeHtml(name) + '</div>';
+        html += '<div style="font-size: .8125rem; color: var(--text-secondary); word-break: break-word; overflow-wrap: anywhere;">' + _escapeHtml(email) + '</div>';
         html += '</div>';
         html += '<div style="display: flex; flex-direction: column; align-items: flex-end; gap: .25rem;">';
         html += badgeHTML;
@@ -131,18 +131,20 @@ var UsersView = (function () {
         html += '</div>';
         
         // Expanded Details
-        html += '<div id="' + detailId + '" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed rgba(226,232,240,.6);">';
+        html += '<div id="' + detailId + '" style="max-height: 0; opacity: 0; overflow: hidden; margin-top: 0; transition: all var(--transition-smooth); border-top: 1px dashed var(--border-color);">';
+        html += '<div style="padding-top: 1rem;">';
         html += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: .75rem; margin-bottom: 1rem; font-size: .8125rem;">';
-        html += '<div><span style="color: #64748b; display: block; font-size: .6875rem; text-transform: uppercase;">Joined</span>' + (u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '–') + '</div>';
+        html += '<div><span style="color: var(--text-secondary); display: block; font-size: .6875rem; text-transform: uppercase;">Joined</span><strong style="color:var(--text-primary);">' + (u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '–') + '</strong></div>';
         if (stateType === 'plus') {
-          html += '<div><span style="color: #64748b; display: block; font-size: .6875rem; text-transform: uppercase;">Expiry</span>' + new Date(u.premiumPlusExpiry).toLocaleDateString() + '</div>';
+          html += '<div><span style="color: var(--text-secondary); display: block; font-size: .6875rem; text-transform: uppercase;">Expiry</span><strong style="color:var(--text-primary);">' + new Date(u.premiumPlusExpiry).toLocaleDateString() + '</strong></div>';
         } else if (stateType === 'trial') {
-          html += '<div><span style="color: #64748b; display: block; font-size: .6875rem; text-transform: uppercase;">Trial Ends</span>' + new Date(u.trialEnd).toLocaleDateString() + '</div>';
+          html += '<div><span style="color: var(--text-secondary); display: block; font-size: .6875rem; text-transform: uppercase;">Trial Ends</span><strong style="color:var(--text-primary);">' + new Date(u.trialEnd).toLocaleDateString() + '</strong></div>';
         }
         html += '</div>';
         
         html += '<div style="display: flex; gap: .5rem; flex-wrap: wrap;">';
         html += '<button class="btn btn-sm ' + actionAccent + '" style="flex:1;" onclick="event.stopPropagation(); UsersView.showIndividualActions(\'' + u.uid + '\', \'' + stateType + '\', \'' + _escapeHtml(name) + '\')">' + actionLabel + '</button>';
+        html += '</div>';
         html += '</div>';
         
         html += '</div>'; // End Expanded Details
