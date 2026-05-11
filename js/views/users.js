@@ -187,20 +187,20 @@ var UsersView = (function () {
     var trialHtml = 
       '<div style="display:flex; align-items:center; gap:.5rem; margin-bottom:.75rem;">' +
         '<input type="number" id="trialDays_' + uid + '" class="modal-input" style="width:80px; margin:0;" value="7" min="1" max="365" />' +
-        '<span style="font-size:.875rem; color:#64748b;">Days Trial</span>' +
+        '<span style="font-size:.875rem; color:var(--text-secondary);">Days Trial</span>' +
       '</div>' +
-      '<button class="btn btn-outline" style="width:100%; margin-bottom:.75rem;" onclick="UsersView.confirmEnt(\'individual\', \'trial\', \'' + uid + '\'); Modal.close();">Grant Trial</button>';
+      '<button class="btn btn-outline" style="width:100%; margin-bottom:.75rem;" onclick="UsersView.confirmEnt(\'individual\', \'trial\', \'' + uid + '\');">Grant Trial</button>';
 
     var premiumHtml = 
-      '<button class="btn btn-outline" style="width:100%; margin-bottom:.75rem;" onclick="UsersView.confirmEnt(\'individual\', \'premium\', \'' + uid + '\'); Modal.close();">Grant Premium (Lifetime)</button>' +
-      '<button class="btn btn-outline" style="width:100%; margin-bottom:.75rem; color:#2563eb; border-color:#bfdbfe;" onclick="UsersView.confirmEnt(\'individual\', \'premium_plus_6m\', \'' + uid + '\'); Modal.close();">Grant Premium+ (6 Months)</button>' +
-      '<button class="btn btn-outline" style="width:100%; margin-bottom:.75rem; color:#2563eb; border-color:#bfdbfe;" onclick="UsersView.confirmEnt(\'individual\', \'premium_plus_1y\', \'' + uid + '\'); Modal.close();">Grant Premium+ (1 Year)</button>';
+      '<button class="btn btn-outline" style="width:100%; margin-bottom:.75rem;" onclick="UsersView.confirmEnt(\'individual\', \'premium\', \'' + uid + '\');">Grant Premium (Lifetime)</button>' +
+      '<button class="btn btn-outline" style="width:100%; margin-bottom:.75rem; color:var(--accent-primary); border-color:#bfdbfe;" onclick="UsersView.confirmEnt(\'individual\', \'premium_plus_6m\', \'' + uid + '\');">Grant Premium+ (6 Months)</button>' +
+      '<button class="btn btn-outline" style="width:100%; margin-bottom:.75rem; color:var(--accent-primary); border-color:#bfdbfe;" onclick="UsersView.confirmEnt(\'individual\', \'premium_plus_1y\', \'' + uid + '\');">Grant Premium+ (1 Year)</button>';
 
     var revokeHtml = '';
     if (stateType !== 'free') {
       revokeHtml = 
-        '<hr style="border:0; border-top:1px dashed #e2e8f0; margin:1rem 0;" />' +
-        '<button class="btn btn-danger" style="width:100%;" onclick="UsersView.confirmEnt(\'individual\', \'revoke\', \'' + uid + '\'); Modal.close();">Revoke All Access</button>';
+        '<hr style="border:0; border-top:1px dashed var(--border-color); margin:1rem 0;" />' +
+        '<button class="btn btn-danger" style="width:100%;" onclick="UsersView.confirmEnt(\'individual\', \'revoke\', \'' + uid + '\');">Revoke All Access</button>';
     }
 
     body.innerHTML = 
@@ -220,14 +220,14 @@ var UsersView = (function () {
       '<p class="text-secondary text-sm" style="margin-bottom: 1.5rem;">Select an action to apply to all students within coaching group <strong>' + _escapeHtml(targetId) + '</strong>.</p>' +
       '<div style="display:flex; align-items:center; gap:.5rem; margin-bottom:.75rem;">' +
         '<input type="number" id="trialDays_' + targetId + '" class="modal-input" style="width:80px; margin:0;" value="7" min="1" max="365" />' +
-        '<span style="font-size:.875rem; color:#64748b;">Days Trial</span>' +
+        '<span style="font-size:.875rem; color:var(--text-secondary);">Days Trial</span>' +
       '</div>' +
-      '<button class="btn btn-outline" style="width:100%; margin-bottom:.75rem;" onclick="UsersView.confirmEnt(\'bulk\', \'trial\', \'' + targetId + '\'); Modal.close();">Grant Trial</button>' +
-      '<button class="btn btn-outline" style="width:100%; margin-bottom:.75rem;" onclick="UsersView.confirmEnt(\'bulk\', \'premium\', \'' + targetId + '\'); Modal.close();">Grant Premium (Lifetime)</button>' +
-      '<button class="btn btn-outline" style="width:100%; margin-bottom:.75rem; color:#2563eb; border-color:#bfdbfe;" onclick="UsersView.confirmEnt(\'bulk\', \'premium_plus_6m\', \'' + targetId + '\'); Modal.close();">Grant Premium+ (6 Months)</button>' +
-      '<button class="btn btn-outline" style="width:100%; margin-bottom:.75rem; color:#2563eb; border-color:#bfdbfe;" onclick="UsersView.confirmEnt(\'bulk\', \'premium_plus_1y\', \'' + targetId + '\'); Modal.close();">Grant Premium+ (1 Year)</button>' +
-      '<hr style="border:0; border-top:1px dashed #e2e8f0; margin:1rem 0;" />' +
-      '<button class="btn btn-danger" style="width:100%;" onclick="UsersView.confirmEnt(\'bulk\', \'revoke\', \'' + targetId + '\'); Modal.close();">Revoke All Access</button>';
+      '<button class="btn btn-outline" style="width:100%; margin-bottom:.75rem;" onclick="UsersView.confirmEnt(\'bulk\', \'trial\', \'' + targetId + '\');">Grant Trial</button>' +
+      '<button class="btn btn-outline" style="width:100%; margin-bottom:.75rem;" onclick="UsersView.confirmEnt(\'bulk\', \'premium\', \'' + targetId + '\');">Grant Premium (Lifetime)</button>' +
+      '<button class="btn btn-outline" style="width:100%; margin-bottom:.75rem; color:var(--accent-primary); border-color:#bfdbfe;" onclick="UsersView.confirmEnt(\'bulk\', \'premium_plus_6m\', \'' + targetId + '\');">Grant Premium+ (6 Months)</button>' +
+      '<button class="btn btn-outline" style="width:100%; margin-bottom:.75rem; color:var(--accent-primary); border-color:#bfdbfe;" onclick="UsersView.confirmEnt(\'bulk\', \'premium_plus_1y\', \'' + targetId + '\');">Grant Premium+ (1 Year)</button>' +
+      '<hr style="border:0; border-top:1px dashed var(--border-color); margin:1rem 0;" />' +
+      '<button class="btn btn-danger" style="width:100%;" onclick="UsersView.confirmEnt(\'bulk\', \'revoke\', \'' + targetId + '\');">Revoke All Access</button>';
     
     Modal.show({
       title: 'Bulk Actions',
@@ -308,6 +308,7 @@ var UsersView = (function () {
   return { 
     render: render, 
     showBulkActions: _showBulkActions,
+    showIndividualActions: _showIndividualActions,
     confirmEnt: _confirmEntitlement 
   };
 })();

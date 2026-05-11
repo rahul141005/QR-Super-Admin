@@ -48,7 +48,7 @@ var Modal = (function () {
         btn.className = 'btn' + (action.accent ? ' accent' : '') + (action.danger ? ' btn-danger' : ' btn-outline');
         btn.textContent = action.label;
         btn.onclick = function () {
-          if (action.onClick) action.onClick();
+          if (action.onClick) action.onClick(btn);
           if (action.autoClose !== false) close();
         };
         actions.appendChild(btn);
