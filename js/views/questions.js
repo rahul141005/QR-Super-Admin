@@ -172,11 +172,12 @@ var QuestionsView = (function () {
       fillEl.style.width = ((i / chunks.length) * 100) + '%';
       
       try {
+        var token = await AdminAuth.getToken();
         var res = await fetch('/api/admin/questions-import', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + AdminAuth.getToken()
+            'Authorization': 'Bearer ' + token
           },
           body: JSON.stringify({ questions: chunks[i] })
         });
@@ -186,10 +187,13 @@ var QuestionsView = (function () {
         } else {
           console.error('Batch failed:', data.error);
           totalFailed += chunks[i].length;
+          throw new Error(data.error || 'Batch import rejected.');
         }
       } catch (e) {
         console.error('Batch failed:', e.message);
         totalFailed += chunks[i].length;
+        Toast.error('Batch ' + (i + 1) + ' failed: ' + e.message);
+        break; // Stop further chunks if one fails critically
       }
     }
     

@@ -27,16 +27,13 @@ module.exports = withAdmin(async function (req, res) {
       const payload = {
         type: type || 'word_problem',
         topic: topic,
-        category: topic, // Dual-write for backward compatibility with older data models if needed
         difficulty: difficulty,
         question: question,
-        text: question, // Dual-write for backward compatibility
         options: options || [],
         answer: Number(answer),
         explanation: explanation || '',
-        steps: explanation || '', // Dual-write for backward compatibility
-        approved: !!approved,
-        status: status || 'draft',
+        approved: approved !== undefined ? !!approved : true,
+        status: status || 'active',
         premiumOnly: !!premiumOnly,
         createdAt: new Date().toISOString()
       };

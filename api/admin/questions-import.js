@@ -33,16 +33,13 @@ module.exports = withAdmin(async function (req, res) {
       const payload = {
         type: q.type || 'word_problem',
         topic: String(q.topic),
-        category: String(q.topic), // Dual-write
         difficulty: String(q.difficulty),
         question: String(q.question),
-        text: String(q.question), // Dual-write
         options: Array.isArray(q.options) ? q.options : [],
         answer: Number(q.answer),
         explanation: q.explanation ? String(q.explanation) : '',
-        steps: q.explanation ? String(q.explanation) : '', // Dual-write
-        approved: !!q.approved,
-        status: q.status || 'draft',
+        approved: q.approved !== undefined ? !!q.approved : true,
+        status: q.status || 'active',
         premiumOnly: !!q.premiumOnly,
         createdAt: new Date().toISOString()
       };
