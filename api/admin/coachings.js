@@ -5,9 +5,20 @@ module.exports = withAdmin(async function (req, res) {
     try {
       const snapshot = await db.collection('coachings').orderBy('createdAt', 'desc').get();
       const coachings = [];
+      const countPromises = [];
+      
       snapshot.forEach(doc => {
-        coachings.push({ id: doc.id, ...doc.data() });
+        const c = { id: doc.id, ...doc.data() };
+        coachings.push(c);
+        // Safely and dynamically aggregate accurate student count
+        countPromises.push(db.collection('users').where('coachingId', '==', c.coachingId).count().get());
       });
+
+      const countSnapshots = await Promise.all(countPromises);
+      countSnapshots.forEach((cSnap, i) => {
+        coachings[i].studentCount = cSnap.data().count;
+      });
+
       return res.status(200).json({ coachings });
     } catch (error) {
       console.error('[coachings] GET Error:', error);

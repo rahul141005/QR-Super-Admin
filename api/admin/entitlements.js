@@ -41,7 +41,7 @@ module.exports = withAdmin(async function (req, res) {
 
     if (action === 'trial') {
       const durationDays = parseInt(trialDays, 10) || 7;
-      const trialEnd = now + durationDays * 24 * 60 * 60 * 1000;
+      const trialEnd = new Date(now + durationDays * 24 * 60 * 60 * 1000).toISOString();
       payload = {
         isTrial: true,
         trialEnd: trialEnd,
@@ -61,7 +61,7 @@ module.exports = withAdmin(async function (req, res) {
     } else if (action === 'premium_plus_6m' || action === 'premium_plus_1y') {
       const plan = action === 'premium_plus_1y' ? 'plus_yearly' : 'plus_half_yearly';
       const days = action === 'premium_plus_1y' ? 365 : 180;
-      const expiry = now + days * 24 * 60 * 60 * 1000;
+      const expiry = new Date(now + days * 24 * 60 * 60 * 1000).toISOString();
       payload = {
         isPremiumPlus: true,
         premiumPlusPlan: plan,
@@ -101,7 +101,15 @@ module.exports = withAdmin(async function (req, res) {
       // Precedence protection: Do not apply trial if already premium/premium+
       if (action === 'trial') {
         let isPrem = docData.isPremium || docData.hasPaid;
-        let isPlus = docData.isPremiumPlus && docData.premiumPlusExpiry && docData.premiumPlusExpiry > now;
+        let expMs = 0;
+        if (docData.premiumPlusExpiry) {
+          if (typeof docData.premiumPlusExpiry === 'number') expMs = docData.premiumPlusExpiry;
+          else if (typeof docData.premiumPlusExpiry === 'string') expMs = Date.parse(docData.premiumPlusExpiry) || 0;
+          else if (typeof docData.premiumPlusExpiry.toDate === 'function') {
+            try { expMs = docData.premiumPlusExpiry.toDate().getTime(); } catch(_) {}
+          }
+        }
+        let isPlus = docData.isPremiumPlus && expMs > now;
         if (isPrem || isPlus) {
           // Skip downgrading to trial
           continue;
