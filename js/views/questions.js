@@ -12,18 +12,121 @@ var QuestionsView = (function () {
           '<h2 class="view-title">Question Bank</h2>' +
           '<p class="view-subtitle">Centralized AI educational content pipeline</p>' +
         '</div>' +
-        '<div style="display:flex;gap:.5rem;">' +
+        '<div style="display:flex;gap:.5rem;flex-wrap:wrap;">' +
           '<button class="btn btn-sm btn-outline" id="qRefreshBtn">Refresh</button>' +
+          '<button class="btn btn-sm" id="qImportBtn" style="background:var(--bg-secondary); border:1px solid var(--border-color);">📤 Import JSON</button>' +
           '<button class="btn btn-sm" id="qGenerateBtn" style="background:var(--bg-secondary); border:1px solid var(--border-color);">✨ AI Generate</button>' +
           '<button class="btn btn-sm accent" id="qAddBtn">+ Manual Add</button>' +
         '</div>' +
       '</div>' +
+      '<input type="file" id="qFileInput" accept=".json" style="display:none;" />' +
       '<div id="questionsTableArea"><div class="loading">Loading questions...</div></div>';
 
     document.getElementById('qRefreshBtn').onclick = _loadQuestions;
     document.getElementById('qGenerateBtn').onclick = _showGenerateModal;
     document.getElementById('qAddBtn').onclick = function() { _showEditModal(); };
+    
+    var fileInput = document.getElementById('qFileInput');
+    document.getElementById('qImportBtn').onclick = function() { fileInput.click(); };
+    fileInput.onchange = _handleFileSelect;
+    
     _loadQuestions();
+  }
+
+  function _handleFileSelect(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    
+    var reader = new FileReader();
+    reader.onload = function(evt) {
+      try {
+        var parsed = JSON.parse(evt.target.result);
+        if (!Array.isArray(parsed)) {
+          Toast.error('Invalid JSON: Must be an array of questions.');
+          return;
+        }
+        _validateAndShowImportPreview(parsed);
+      } catch (err) {
+        Toast.error('Failed to parse JSON file.');
+      }
+      // Reset input
+      document.getElementById('qFileInput').value = '';
+    };
+    reader.readAsText(file);
+  }
+
+  function _validateAndShowImportPreview(arr) {
+    var valid = [];
+    var invalid = 0;
+    
+    arr.forEach(function(q) {
+      if (q.topic && q.difficulty && q.question && q.answer !== undefined) {
+        valid.push(q);
+      } else {
+        invalid++;
+      }
+    });
+    
+    var body = document.createElement('div');
+    body.innerHTML = 
+      '<p class="text-secondary text-sm" style="margin-bottom:1rem;">Your file has been scanned.</p>' +
+      '<div style="display:flex; gap:1rem; margin-bottom:1.5rem;">' +
+        '<div style="flex:1; padding:1rem; background:#ecfdf5; border:1px solid #a7f3d0; border-radius:.75rem; text-align:center;">' +
+          '<div style="font-size:1.5rem; font-weight:800; color:#059669;">' + valid.length + '</div>' +
+          '<div style="font-size:.75rem; color:#065f46; font-weight:600; text-transform:uppercase;">Valid</div>' +
+        '</div>' +
+        '<div style="flex:1; padding:1rem; background:#fef2f2; border:1px solid #fecaca; border-radius:.75rem; text-align:center;">' +
+          '<div style="font-size:1.5rem; font-weight:800; color:#dc2626;">' + invalid + '</div>' +
+          '<div style="font-size:.75rem; color:#991b1b; font-weight:600; text-transform:uppercase;">Invalid/Skipped</div>' +
+        '</div>' +
+      '</div>' +
+      (valid.length > 500 ? '<div class="login-error">Maximum 500 questions allowed per import. Please split your file.</div>' : '') +
+      '<p class="text-sm text-secondary">Clicking Confirm will immediately upload the valid questions to the database.</p>';
+      
+    Modal.show({
+      title: 'Import Preview',
+      body: body,
+      actions: [
+        { label: 'Cancel' },
+        { 
+          label: 'Confirm Import', 
+          accent: true, 
+          onClick: function(btn) { 
+            if(valid.length > 500) { Toast.error('Max 500 questions allowed.'); return; }
+            if(valid.length === 0) { Toast.error('No valid questions to import.'); return; }
+            _executeImport(valid, btn); 
+          }, 
+          autoClose: false 
+        }
+      ]
+    });
+  }
+
+  async function _executeImport(validArray, btn) {
+    btn.disabled = true;
+    btn.textContent = 'Uploading...';
+    
+    try {
+      var res = await fetch('/api/admin/questions-import', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + AdminAuth.getToken()
+        },
+        body: JSON.stringify({ questions: validArray })
+      });
+      
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Import failed');
+      
+      Toast.success('Successfully imported ' + data.count + ' questions.');
+      Modal.close();
+      _loadQuestions();
+    } catch (e) {
+      btn.disabled = false;
+      btn.textContent = 'Confirm Import';
+      Toast.error(e.message);
+    }
   }
 
   async function _loadQuestions() {

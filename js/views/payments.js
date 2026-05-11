@@ -180,9 +180,9 @@ var PaymentsView = (function () {
 
       html += '<div class="card" style="padding:1.25rem;margin-bottom:0;">' +
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;margin-bottom:1rem;">' +
-          '<div>' +
-            '<h3 style="font-size:1.0625rem;font-weight:700;color:#0f172a;margin-bottom:.25rem;">' + _escapeHtml(name) + '</h3>' +
-            '<p class="text-secondary text-sm">' + _escapeHtml(email) + '</p>' +
+          '<div style="flex:1;min-width:150px;">' +
+            '<h3 style="font-size:1.0625rem;font-weight:700;color:#0f172a;margin-bottom:.25rem;word-break:break-word;overflow-wrap:anywhere;">' + _escapeHtml(name) + '</h3>' +
+            '<p class="text-secondary text-sm" style="word-break:break-word;overflow-wrap:anywhere;">' + _escapeHtml(email) + '</p>' +
           '</div>' +
           '<div>' +
             '<span class="badge ' + badgeClass + '">' + badgeText + '</span>' +

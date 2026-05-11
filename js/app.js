@@ -16,6 +16,7 @@ var App = (function () {
     AdminAuth.init();
     _bindLogin();
     _bindLogout();
+    _bindSidebar();
 
     AdminAuth.onAuthReady(function (user) {
       if (user) {
@@ -90,8 +91,33 @@ var App = (function () {
 
   /* ---- Logout ---- */
   function _bindLogout() {
-    var btn = document.getElementById('logoutBtnTop');
+    var btn = document.getElementById('logoutBtn');
     if (btn) btn.addEventListener('click', AdminAuth.logout);
+  }
+
+  /* ---- Sidebar Toggle ---- */
+  function _bindSidebar() {
+    var btn = document.getElementById('menuToggleBtn');
+    var overlay = document.getElementById('sidebarOverlay');
+    var sidebar = document.getElementById('sidebar');
+
+    function toggleSidebar() {
+      sidebar.classList.toggle('active');
+      overlay.classList.toggle('active');
+    }
+
+    if (btn) btn.addEventListener('click', toggleSidebar);
+    if (overlay) overlay.addEventListener('click', toggleSidebar);
+
+    // Close sidebar on navigation (mobile)
+    document.querySelectorAll('.sidebar-nav .nav-item').forEach(function(el) {
+      el.addEventListener('click', function() {
+        if (window.innerWidth < 768) {
+          sidebar.classList.remove('active');
+          overlay.classList.remove('active');
+        }
+      });
+    });
   }
 
   return { init: init };

@@ -72,96 +72,81 @@ var UsersView = (function () {
     }
 
     area.innerHTML = html;
-
-    // Attach event listeners for entitlements
-    var actionSelects = area.querySelectorAll('.entitlement-select');
-    actionSelects.forEach(function (select) {
-      select.onchange = function () {
-        if (!this.value) return;
-        var type = this.getAttribute('data-type');
-        var targetId = this.getAttribute('data-target');
-        var action = this.value;
-        this.value = ''; // Reset dropdown
-        _confirmEntitlement(type, action, targetId);
-      };
-    });
   }
 
   function _buildGroupHTML(title, users, type, targetId) {
-    var html = '<div class="coaching-group card" style="margin-bottom: 1.5rem; border-radius: 12px; overflow: hidden; background: var(--bg-card); border: 1px solid var(--border-color);">';
+    var html = '<div class="coaching-group card" style="margin-bottom: 1.5rem; padding:0; overflow: hidden;">';
     
     // Header
-    html += '<div class="group-header" style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.02);">';
-    html += '<div style="font-weight: 600; font-size: 1.1rem; color: var(--text-main);">' + title + ' <span class="badge" style="margin-left:8px; font-weight:normal; background: var(--bg-secondary);">' + users.length + ' students</span></div>';
+    html += '<div class="group-header" style="padding: 1.25rem; border-bottom: 1px solid rgba(226,232,240,.6); display: flex; justify-content: space-between; align-items: center; background: #f8fafc; flex-wrap: wrap; gap: 1rem;">';
+    html += '<div style="font-weight: 700; font-size: 1.0625rem; color: #0f172a; display: flex; align-items: center; gap: .5rem; word-break: break-word;">' + _escapeHtml(title) + ' <span class="badge badge-free">' + users.length + ' students</span></div>';
     
     if (type === 'bulk' && targetId) {
-      html += '<div class="group-actions">';
-      html += '<select class="entitlement-select form-control" data-type="bulk" data-target="' + targetId + '" style="padding: 0.4rem; font-size: 0.9rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-body);">';
-      html += '<option value="">Bulk Actions...</option>';
-      html += '<option value="trial">Grant Trial (7 Days)</option>';
-      html += '<option value="premium">Grant Premium (Lifetime)</option>';
-      html += '<option value="premium_plus_6m">Grant Premium+ (6 Months)</option>';
-      html += '<option value="premium_plus_1y">Grant Premium+ (1 Year)</option>';
-      html += '<option value="revoke">Revoke All Access</option>';
-      html += '</select>';
-      html += '</div>';
+      html += '<button class="btn btn-sm accent" style="width: auto;" onclick="UsersView.showBulkActions(\'' + targetId + '\')">Bulk Actions ⚡</button>';
     }
     html += '</div>';
 
     // Users List
-    html += '<div class="group-content" style="padding: 0;">';
+    html += '<div class="group-content" style="padding: 1rem; display: flex; flex-direction: column; gap: 1rem;">';
     if (users.length === 0) {
-      html += '<div style="padding: 2rem; text-align: center; color: var(--text-muted); font-size: 0.9rem;">No students in this group.</div>';
+      html += '<div class="empty-state" style="padding: 1.5rem 1rem;"><div class="empty-state-text">No students in this group.</div></div>';
     } else {
-      html += '<table class="table" style="margin: 0; width: 100%;">';
-      html += '<thead><tr><th>User</th><th>Status</th><th>Joined</th><th style="text-align:right;">Actions</th></tr></thead>';
-      html += '<tbody>';
       users.forEach(function (u) {
-        html += '<tr style="border-bottom: 1px solid var(--border-color);">';
-        html += '<td style="padding: 1rem;">';
-        html += '<div style="font-weight: 500;">' + (u.username || 'Unknown') + '</div>';
-        html += '<div style="font-size: 0.8rem; color: var(--text-muted);">' + (u.email || 'No email') + '</div>';
-        html += '</td>';
-        
-        // Status Column
-        html += '<td style="padding: 1rem;">';
-        if (u.isPremiumPlus) {
-          html += '<span class="badge badge-premium-plus">Premium+</span>';
-          if (u.premiumPlusExpiry) {
-            html += '<div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Exp: ' + new Date(u.premiumPlusExpiry).toLocaleDateString() + '</div>';
-          }
-        } else if (u.isPremium) {
-          html += '<span class="badge badge-premium">Premium</span>';
-        } else if (u.isTrial) {
-          html += '<span class="badge badge-trial" style="background:#f39c12;color:#fff;">Trial</span>';
-          if (u.trialEnd) {
-            html += '<div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Exp: ' + new Date(u.trialEnd).toLocaleDateString() + '</div>';
-          }
-        } else {
-          html += '<span class="badge badge-free" style="background:#e0e0e0;color:#333;">Free</span>';
-        }
-        html += '</td>';
+        var name = u.username || u.displayName || 'Unknown';
+        var email = u.email || 'No email';
+        var isPrem = u.isPremiumPlus || u.isPremium;
+        var badgeHTML = '';
+        if (u.isPremiumPlus) badgeHTML = '<span class="badge badge-premium-plus">Premium+</span>';
+        else if (u.isPremium) badgeHTML = '<span class="badge badge-premium">Premium</span>';
+        else if (u.isTrial) badgeHTML = '<span class="badge badge-draft">Trial</span>';
+        else badgeHTML = '<span class="badge badge-free">Free</span>';
 
-        html += '<td style="padding: 1rem; color: var(--text-muted); font-size: 0.9rem;">' + (u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '–') + '</td>';
+        // Use a container that expands on click (using a simple toggle pattern)
+        var detailId = 'details_' + u.uid;
         
-        // Individual Actions
-        html += '<td style="padding: 1rem; text-align:right;">';
-        html += '<select class="entitlement-select form-control" data-type="individual" data-target="' + u.uid + '" style="padding: 0.3rem; font-size: 0.8rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-body);">';
-        html += '<option value="">Modify Access...</option>';
-        html += '<option value="trial">Trial Access</option>';
-        html += '<option value="premium">Premium Lifetime</option>';
-        html += '<option value="premium_plus_6m">Premium+ 6m</option>';
-        html += '<option value="premium_plus_1y">Premium+ 1y</option>';
-        html += '<option value="revoke">Revoke Access</option>';
-        html += '</select>';
-        html += '</td>';
-        html += '</tr>';
+        html += '<div style="border: 1px solid rgba(226,232,240,.6); border-radius: .75rem; padding: 1rem; background: #fff; cursor: pointer; transition: border-color .2s;" onclick="document.getElementById(\'' + detailId + '\').style.display = document.getElementById(\'' + detailId + '\').style.display === \'none\' ? \'block\' : \'none\';">';
+        html += '<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: .5rem; flex-wrap: wrap;">';
+        html += '<div style="flex: 1; min-width: 150px;">';
+        html += '<div style="font-weight: 600; font-size: .9375rem; color: #0f172a; word-break: break-word; overflow-wrap: anywhere; line-height: 1.2; margin-bottom: .25rem;">' + _escapeHtml(name) + '</div>';
+        html += '<div style="font-size: .8125rem; color: #64748b; word-break: break-word; overflow-wrap: anywhere;">' + _escapeHtml(email) + '</div>';
+        html += '</div>';
+        html += '<div style="display: flex; flex-direction: column; align-items: flex-end; gap: .25rem;">';
+        html += badgeHTML;
+        html += '<div style="font-size: .6875rem; color: #94a3b8; margin-top: .25rem;">Tap for actions ▼</div>';
+        html += '</div>';
+        html += '</div>';
+        
+        // Expanded Details
+        html += '<div id="' + detailId + '" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed rgba(226,232,240,.6);">';
+        html += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: .75rem; margin-bottom: 1rem; font-size: .8125rem;">';
+        html += '<div><span style="color: #64748b; display: block; font-size: .6875rem; text-transform: uppercase;">Joined</span>' + (u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '–') + '</div>';
+        if (u.isPremiumPlus && u.premiumPlusExpiry) {
+          html += '<div><span style="color: #64748b; display: block; font-size: .6875rem; text-transform: uppercase;">Expiry</span>' + new Date(u.premiumPlusExpiry).toLocaleDateString() + '</div>';
+        } else if (u.isTrial && u.trialEnd) {
+          html += '<div><span style="color: #64748b; display: block; font-size: .6875rem; text-transform: uppercase;">Trial Ends</span>' + new Date(u.trialEnd).toLocaleDateString() + '</div>';
+        }
+        html += '</div>';
+        
+        html += '<div style="display: flex; gap: .5rem; flex-wrap: wrap;">';
+        html += '<button class="btn btn-sm btn-outline" style="flex:1;" onclick="event.stopPropagation(); UsersView.confirmEnt(\'individual\', \'trial\', \'' + u.uid + '\')">Trial</button>';
+        html += '<button class="btn btn-sm btn-outline" style="flex:1;" onclick="event.stopPropagation(); UsersView.confirmEnt(\'individual\', \'premium_plus_6m\', \'' + u.uid + '\')">Premium+</button>';
+        html += '<button class="btn btn-sm btn-danger" style="flex:1;" onclick="event.stopPropagation(); UsersView.confirmEnt(\'individual\', \'revoke\', \'' + u.uid + '\')">Revoke</button>';
+        html += '</div>';
+        
+        html += '</div>'; // End Expanded Details
+        html += '</div>'; // End Card
       });
-      html += '</tbody></table>';
     }
     html += '</div></div>';
 
     return html;
+  }
+
+  function _escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, function(m) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+    });
   }
 
   function _showAddCoachingModal() {
@@ -179,6 +164,24 @@ var UsersView = (function () {
         { label: 'Cancel' },
         { label: 'Create', accent: true, onClick: _createCoaching, autoClose: false }
       ]
+    });
+  }
+
+  function _showBulkActions(targetId) {
+    var body = document.createElement('div');
+    body.innerHTML = 
+      '<p class="text-secondary text-sm" style="margin-bottom: 1.5rem;">Select an action to apply to all students within coaching group <strong>' + _escapeHtml(targetId) + '</strong>.</p>' +
+      '<div style="display: flex; flex-direction: column; gap: .75rem;">' +
+        '<button class="btn btn-outline" onclick="UsersView.confirmEnt(\'bulk\', \'trial\', \'' + targetId + '\'); Modal.close();">Grant 7-Day Trial</button>' +
+        '<button class="btn btn-outline" style="color:#2563eb; border-color:#bfdbfe;" onclick="UsersView.confirmEnt(\'bulk\', \'premium_plus_6m\', \'' + targetId + '\'); Modal.close();">Grant Premium+ (6 Months)</button>' +
+        '<button class="btn btn-outline" style="color:#2563eb; border-color:#bfdbfe;" onclick="UsersView.confirmEnt(\'bulk\', \'premium_plus_1y\', \'' + targetId + '\'); Modal.close();">Grant Premium+ (1 Year)</button>' +
+        '<button class="btn btn-danger" onclick="UsersView.confirmEnt(\'bulk\', \'revoke\', \'' + targetId + '\'); Modal.close();">Revoke All Access</button>' +
+      '</div>';
+    
+    Modal.show({
+      title: 'Bulk Actions',
+      body: body,
+      actions: [ { label: 'Close' } ]
     });
   }
 
@@ -226,5 +229,9 @@ var UsersView = (function () {
     }
   }
 
-  return { render: render };
+  return { 
+    render: render, 
+    showBulkActions: _showBulkActions,
+    confirmEnt: _confirmEntitlement 
+  };
 })();
