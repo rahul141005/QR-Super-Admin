@@ -162,160 +162,95 @@ input, textarea, select { font-family: inherit; }
   min-height: 100dvh;
 }
 
-/* ---- Top Bar (mobile) ---- */
+/* ---- Top Bar (Universal Desktop & Mobile) ---- */
 .top-bar {
-  display: flex;
-  align-items: center;
-  padding: 0 1rem;
-  height: 56px;
-  background: rgba(255,255,255,.88);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(255,255,255,.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(226,232,240,.6);
   position: sticky;
   top: 0;
   z-index: 100;
 }
-
-.menu-toggle {
-  width: 36px; height: 36px;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 4px;
-  background: none; border: none; cursor: pointer; padding: 0;
-  touch-action: manipulation;
-}
-.menu-toggle span {
-  width: 20px; height: 2px;
-  background: #334155; border-radius: 1px;
-  transition: transform .2s, opacity .2s;
-}
-
-.top-bar-title {
-  flex: 1;
-  text-align: center;
-  font-size: 1.0625rem;
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.top-bar-action {
-  width: 36px; height: 36px;
-  display: flex; align-items: center; justify-content: center;
-  background: none; border: none; cursor: pointer;
-  color: #64748b;
-  touch-action: manipulation;
-}
-
-/* ---- Sidebar ---- */
-.sidebar {
-  position: fixed;
-  top: 0; left: 0; bottom: 0;
-  width: 260px;
-  background: rgba(255,255,255,.95);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-right: 1px solid rgba(226,232,240,.6);
-  z-index: 200;
-  display: flex;
-  flex-direction: column;
-  transform: translateX(-100%);
-  transition: transform .25s cubic-bezier(.25,.46,.45,.94);
-}
-.sidebar.open { transform: translateX(0); }
-
-.sidebar-overlay {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,.3);
-  z-index: 199;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .25s ease;
-}
-.sidebar-overlay.active {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.sidebar-brand {
+.top-bar-inner {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  height: 60px;
   display: flex;
   align-items: center;
-  gap: .75rem;
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid rgba(226,232,240,.6);
-  font-weight: 700;
-  font-size: .9375rem;
-  color: #0f172a;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
-.sidebar-logo {
-  width: 36px; height: 36px;
+.top-brand {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  font-weight: 700;
+  color: #0f172a;
+  flex-shrink: 0;
+}
+.top-logo {
+  width: 32px; height: 32px;
   background: linear-gradient(135deg, #2563eb, #1d4ed8);
   color: #fff;
   border-radius: .5rem;
   display: flex; align-items: center; justify-content: center;
   font-size: .875rem; font-weight: 800;
-  flex-shrink: 0;
 }
+.top-title { font-size: 1rem; }
 
-.sidebar-nav {
+.top-nav {
+  display: flex;
+  gap: 1.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
   flex: 1;
-  padding: .75rem 0;
-  overflow-y: auto;
 }
+.top-nav::-webkit-scrollbar { display: none; }
 
 .nav-item {
-  display: flex;
-  align-items: center;
-  gap: .75rem;
-  padding: .75rem 1.5rem;
   color: #64748b;
-  font-weight: 500;
+  font-weight: 600;
   font-size: .875rem;
-  transition: all .15s ease;
-  touch-action: manipulation;
+  padding: 1.2rem 0;
+  white-space: nowrap;
+  position: relative;
+  transition: color .2s;
 }
-.nav-item:hover,
-.nav-item.active {
-  color: #2563eb;
-  background: rgba(37,99,235,.06);
-}
-.nav-item.active {
-  font-weight: 600;
-  border-right: 3px solid #2563eb;
-}
-.nav-item svg { flex-shrink: 0; }
-
-.sidebar-footer {
-  padding: 1rem 1.5rem;
-  border-top: 1px solid rgba(226,232,240,.6);
+.nav-item:hover { color: #334155; }
+.nav-item.active { color: #2563eb; }
+.nav-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+  background: #2563eb;
+  border-radius: 3px 3px 0 0;
 }
 
-.sidebar-logout {
-  width: 100%;
-  padding: .625rem 1rem;
-  background: transparent;
-  border: 1.5px solid #e2e8f0;
-  border-radius: .5rem;
-  font-size: .8125rem;
-  font-weight: 600;
+.top-action {
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; cursor: pointer;
   color: #64748b;
-  cursor: pointer;
-  transition: all .15s;
-  touch-action: manipulation;
+  flex-shrink: 0;
 }
-.sidebar-logout:hover { background: #f1f5f9; color: #334155; }
+.top-action:hover { color: #dc2626; }
 
 /* ---- Main Content ---- */
 .main-content {
   flex: 1;
-  padding: 1.25rem;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  padding: 1.5rem 1rem;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
-.view { display: none; max-width: 900px; margin: 0 auto; }
-.view.active { display: block; animation: viewFadeIn .25s ease; }
+.view { display: none; animation: viewFadeIn .25s ease; }
+.view.active { display: block; }
 
 @keyframes viewFadeIn {
   from { opacity: 0; transform: translateY(4px); }
@@ -338,7 +273,7 @@ input, textarea, select { font-family: inherit; }
   -webkit-backdrop-filter: blur(10px);
   border-radius: 1rem;
   padding: 1.25rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   box-shadow: 0 2px 8px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04);
   border: 1px solid rgba(226,232,240,.6);
   overflow: hidden;
@@ -624,20 +559,12 @@ input, textarea, select { font-family: inherit; }
 
 /* ==================== DESKTOP (768px+) ==================== */
 @media (min-width: 768px) {
-  .top-bar { display: none; }
-
-  .sidebar {
-    position: fixed;
-    transform: translateX(0);
+  .top-bar-inner {
+    padding: 0 2rem;
   }
-
-  .sidebar-overlay { display: none; }
-
   .main-content {
-    margin-left: 260px;
     padding: 2rem;
   }
-
   .stat-grid {
     grid-template-columns: repeat(4, 1fr);
   }
@@ -650,8 +577,6 @@ input, textarea, select { font-family: inherit; }
   .modal-overlay {
     align-items: center;
   }
-
-  .view { max-width: 1000px; }
 }
 
 /* ---- Very small screens ---- */
